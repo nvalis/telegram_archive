@@ -1,0 +1,109 @@
+{% macro normal_message(message) -%}
+  <div class="message-box">
+    <div class="message-wrapper">
+      {% if channel_name -%}
+      <div class="author">{{ channel_name }}</div>
+      {%- endif %}
+      {% if message.fwd_from %}
+        <div class="forwarded_from">
+          Forwarded from {{message.fwd_from.channel_id|channellink}}
+        </div>
+      {% endif %}
+
+      {% if media_path is not none -%}
+        {% if is_photo(message) %}
+        <div class="photo-wrapper">
+          <img src="{{message|media_filename(media_path)|relative_to(target_path)}}" />
+        </div>
+        {% endif %}
+
+        {% if is_audio(message) %}
+        <div class="audio-wrapper" id="audio-{{message.id}}">
+          <audio>
+            <source src="{{message|media_filename(media_path)|relative_to(target_path)}}"
+              type="{{message.media.document.mime_type}}">
+          </audio>
+          <div class="icon play button" data-audio="audio-{{message.id}}"></div>
+          <div class="progress-wrapper">
+            <div class="waveform-wrapper">
+              {% set waveform = generate_waveform() %}
+              <div class="waveform">
+                {% for i in waveform -%}
+                <s style="height: {{i}}%;"></s>
+                {%- endfor %}
+              </div>
+              <div class="waveform blue">
+                {% for i in waveform -%}
+                <s style="height: {{i}}%;"></s>
+                {%- endfor %}
+              </div>
+            </div>
+            <time>{{message|duration}}</time>
+          </div>
+        </div>
+        {% endif %}
+      {% else %}
+      <span class="not_available">
+        This message contains some media element which was not downloaded.
+      </span>
+      {% endif %}
+
+      <div class="message">{{message.message|urlize}}</div>
+
+      {% if is_poll(message) %}
+        {% set poll = message.poll.poll %}
+        <div class="poll">
+          <div class="question">{{poll.question}}</div>
+          {% if not poll.public_voters %}
+            <div class="type">Anonymous Poll</div>
+          {% endif %}
+          <div class="answers">
+          {% for answer in poll.answers %}
+            <div class="answer">
+              <div class="percent">?%</div>
+              <div class="value">
+                <div class="text">{{answer.text}}</div>
+                <div class="bar" style="width: 100%"></div>
+              </div>
+            </div>
+          {% endfor %}
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="footer">
+        <div class="footer-wrap">
+          {% if is_poll(message) %}
+            <span class="votes after-icon">{{message.poll.results.total_voters}}</span>
+          {% endif %}
+          {% if media_path is not none and message.media is not none %}
+          <a href="{{message|media_filename(media_path)|relative_to(target_path)}}">
+            <span class="download after-icon"></span>
+          </a>
+          {% endif %}
+          <span class="views after-icon">{{message.views}}</span>
+          {% if message.edit_date %}
+            <span class="edited">edited</span>
+          {% endif %}
+          <span class="date">{{message.date.strftime("%d.%m.%Y %H:%M")}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
+
+{% macro service_message(message) -%}
+  <div class="message-box">
+    <div class="message-wrapper">
+      <div class="author">System</div>
+      {% set action = message.action.to_dict() %}
+      <div class="message">{{action["_"]}}: {{action["title"]}}</div>
+
+      <div class="footer">
+        <div class="footer-wrap">
+          <span class="date">{{message.date.strftime("%d.%m.%Y %H:%M")}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+{%- endmacro %}
