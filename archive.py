@@ -6,6 +6,11 @@ import telethon
 from telethon.tl.functions.messages import GetHistoryRequest
 import pickle
 from pathlib import Path
+import logging
+
+log = logging.getLogger("archive")
+logging.basicConfig(level=logging.DEBUG)
+logging.root.handlers[0].addFilter(logging.Filter("archive"))
 
 
 async def init_client(api_id, api_hash):
@@ -22,14 +27,16 @@ async def get_channel_messages(
     client, channel_entity, out_file, media_path=None, total_count_limit=0
 ):
     # scrape last n messages from the given channel
-    offset_id = 200
-    limit = 100
+    offset_id = 0
+    limit = 20
 
     if out_file.is_file():
-        print(f"File '{out_file}' already exists. Reading already scraped messages...")
+        log.info(
+            f"File '{out_file}' already exists. Reading already scraped messages..."
+        )
         all_messages = pickle.load(open(out_file, "rb"))
         total_messages = len(all_messages)
-        print(f"Read {total_messages} messages")
+        log.info(f"Read {total_messages} messages")
     else:
         all_messages = []
         total_messages = 0
@@ -53,6 +60,7 @@ async def get_channel_messages(
             break
         messages = history.messages
         all_messages.extend(messages)
+        log.info(f"{len(messages)} new, {len(all_messages)} overall")
         if media_path:
             for message in messages:
                 if message.media:
@@ -68,15 +76,13 @@ async def get_channel_messages(
         if total_count_limit != 0 and total_messages >= total_count_limit:
             break
         dump_messages(all_messages, out_file)
-        print(".", end="", flush=True)
-    print()
     return all_messages
 
 
 async def main(args):
     client = await init_client(args.id, args.hash)
     channel = await client.get_entity(args.channel)
-    print(f"Scraping channel {args.channel}, this might take a while...")
+    log.info(f"Scraping channel {args.channel}, this might take a while...")
 
     subdir = Path.cwd() / args.channel
     subdir.mkdir(exist_ok=True)
@@ -88,7 +94,7 @@ async def main(args):
     )
 
     dump_messages(messages, out_file)
-    print(f"Saved {len(messages)} messages to {out_file}")
+    log.info(f"Saved {len(messages)} messages to {out_file}")
 
 
 if __name__ == "__main__":
