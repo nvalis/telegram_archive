@@ -173,6 +173,9 @@ body {
 }
 
 .pagination {
+  display: flex;
+  justify-content: center;
+
   ul {
     font-size: 0;
     margin-top: 20px;

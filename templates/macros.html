@@ -110,3 +110,33 @@
     </div>
   </div>
 {%- endmacro %}
+
+{% macro pagination() -%}
+  {% if num_pages > 1 -%}
+  <div class="pagination">
+    <ul>
+      <li class="arrow left{% if current_page == 1 %} disabled{% endif %}">
+        {% if current_page > 1 -%}
+        <a href="page_{{'{:0>4}'.format(current_page - 1)}}.html">&lt;</a>
+        {%- else -%}
+        &lt;
+        {%- endif %}
+      </li>
+      {% for page in get_pagination(current_page, num_pages) -%}
+      {% if page != "..." -%}
+      <li{% if page == current_page %} class="active"{% endif %}><a href="page_{{'{:0>4}'.format(page)}}.html">{{ page }}</a></li>
+      {%- else -%}
+      <li class="ellipsis">...</li>
+      {%- endif %}
+      {%- endfor %}
+      <li class="arrow right{% if current_page == num_pages %} disabled{% endif %}">
+        {% if current_page < num_pages -%}
+        <a href="page_{{'{:0>4}'.format(current_page + 1)}}.html">&gt;</a>
+        {%- else -%}
+        &gt;
+        {%- endif %}
+      </li>
+    </ul>
+  </div>
+  {%- endif %}
+{%- endmacro %}

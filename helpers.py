@@ -51,7 +51,7 @@ def is_file_media(m):
 
 
 @register_helper
-def pagination(current_page, num_pages, adjacents=2, at_ends=1):
+def get_pagination(current_page, num_pages, adjacents=2, at_ends=1):
     # Don't break up only a few pages
     if num_pages < 7 + adjacents:
         return list(range(1, num_pages + 1))
