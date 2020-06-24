@@ -31,11 +31,13 @@ def generate_pages(messages, target_path, media_path=None, entries_per_page=1000
 
 def main(args):
     target_path = Path(args.output_folder)
+    target_path.mkdir(exist_ok=True)
     media_path = Path(args.media_folder) if args.media_folder else None
+
     with open(args.input, "rb") as f:
         messages = pickle.load(f)
     generate_pages(messages[::-1], target_path=target_path, media_path=media_path,
-                  entries_per_page=args.num_entries_per_page, channel_name=args.channel)
+                   entries_per_page=args.num_entries_per_page, channel_name=args.channel)
     copy(target_path / "page_0001.html", target_path / "index.html")
     copy_tree("static", (target_path / "static").as_posix())
 

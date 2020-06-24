@@ -10,42 +10,45 @@
         </div>
       {% endif %}
 
-      {% if media_path is not none -%}
-        {% if is_photo(message) %}
-        <div class="photo-wrapper">
-          <img src="{{message|media_filename(media_path)|relative_to(target_path)}}" />
-        </div>
-        {% endif %}
-
-        {% if is_audio(message) %}
-        <div class="audio-wrapper" id="audio-{{message.id}}">
-          <audio>
-            <source src="{{message|media_filename(media_path)|relative_to(target_path)}}"
-              type="{{message.media.document.mime_type}}">
-          </audio>
-          <div class="icon play button" data-audio="audio-{{message.id}}"></div>
-          <div class="progress-wrapper">
-            <div class="waveform-wrapper">
-              {% set waveform = generate_waveform() %}
-              <div class="waveform">
-                {% for i in waveform -%}
-                <s style="height: {{i}}%;"></s>
-                {%- endfor %}
-              </div>
-              <div class="waveform blue">
-                {% for i in waveform -%}
-                <s style="height: {{i}}%;"></s>
-                {%- endfor %}
-              </div>
-            </div>
-            <time>{{message|duration}}</time>
+      {% set message_media_filename = message|media_filename(media_path)|relative_to(target_path) %}
+      {% if is_file_media(message) -%}
+        {% if message_media_filename -%}
+          {% if is_photo(message) %}
+          <div class="photo-wrapper">
+            <img src="{{message_media_filename}}" />
           </div>
-        </div>
+          {% endif %}
+
+          {% if is_audio(message) %}
+          <div class="audio-wrapper" id="audio-{{message.id}}">
+            <audio>
+              <source src="{{message|media_filename(media_path)|relative_to(target_path)}}"
+                type="{{message.media.document.mime_type}}">
+            </audio>
+            <div class="icon play button" data-audio="audio-{{message.id}}"></div>
+            <div class="progress-wrapper">
+              <div class="waveform-wrapper">
+                {% set waveform = generate_waveform() %}
+                <div class="waveform">
+                  {% for i in waveform -%}
+                  <s style="height: {{i}}%;"></s>
+                  {%- endfor %}
+                </div>
+                <div class="waveform blue">
+                  {% for i in waveform -%}
+                  <s style="height: {{i}}%;"></s>
+                  {%- endfor %}
+                </div>
+              </div>
+              <time>{{message|duration}}</time>
+            </div>
+          </div>
+          {% endif %}
+        {% else %}
+        <span class="not_available">
+          This message contains some media element which was not downloaded.
+        </span>
         {% endif %}
-      {% else %}
-      <span class="not_available">
-        This message contains some media element which was not downloaded.
-      </span>
       {% endif %}
 
       <div class="message">{{message.message|urlize}}</div>
@@ -76,7 +79,7 @@
           {% if is_poll(message) %}
             <span class="votes after-icon">{{message.poll.results.total_voters}}</span>
           {% endif %}
-          {% if media_path is not none and message.media is not none %}
+          {% if message_media_filename is not none %}
           <a href="{{message|media_filename(media_path)|relative_to(target_path)}}">
             <span class="download after-icon"></span>
           </a>

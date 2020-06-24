@@ -1,8 +1,12 @@
 import telethon
 import random
 from pathlib import Path
+import logging
 
 
+logger = logging.getLogger("present")
+logging.basicConfig(level=logging.DEBUG)
+logging.root.handlers[0].addFilter(logging.Filter("present"))
 helpers = {}
 filters = {}
 
@@ -39,6 +43,11 @@ def is_audio(m):
     if isinstance(m.media, telethon.types.MessageMediaDocument):
         return m.media.document.mime_type.startswith("audio")
     return False
+
+
+@register_helper
+def is_file_media(m):
+    return is_photo(m) or is_audio(m)
 
 
 @register_helper
@@ -84,12 +93,13 @@ def channellink(channel_id):
 
 @register_filter
 def media_filename(message, media_path=""):
-    if not media_path:
+    if not media_path or not is_file_media(message):
         return ""
     media_path = Path(media_path)
     try:
         return media_path.glob(f"{message.id:0>7}.*").__iter__().__next__().as_posix()
     except StopIteration:
+        logger.info(f"Tried to glob for {message.id:0>7}.* in {media_path}, but could not find it (it is of type {type(message.media)}).")
         return ""
 
 
