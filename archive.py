@@ -84,10 +84,14 @@ async def main(args):
     channel = await client.get_entity(args.channel)
     log.info(f"Scraping channel {args.channel}, this might take a while...")
 
-    subdir = Path.cwd() / args.channel
+    if args.out:
+        out_file = Path(args.out)
+        subdir = out_file.parent / args.channel
+    else:
+        subdir = Path.cwd() / args.channel
+        out_file = subdir / f"{args.channel}.pkl"
     subdir.mkdir(exist_ok=True)
 
-    out_file = Path(args.out) if args.out else subdir / f"{args.channel}.pkl"
     media_path = subdir if args.media else None
     messages = await get_channel_messages(
         client, channel, out_file, media_path=media_path, total_count_limit=args.number
