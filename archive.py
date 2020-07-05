@@ -34,16 +34,19 @@ async def get_channel_messages(
         log.info(
             f"File '{out_file}' already exists. Reading already scraped messages..."
         )
-        all_messages = pickle.load(open(out_file, "rb"))
-        total_messages = len(all_messages)
-        log.info(f"Read {total_messages} messages")
+        old_messages = pickle.load(open(out_file, "rb"))
+        log.info(f"Read {len(old_messages)} messages")
+        newest_old_message = old_messages[-1].id
     else:
-        all_messages = []
-        total_messages = 0
+        old_messages = []
+        newest_old_message = 0
+    num_old_messages = 0
+    num_total_messages = 0
+    new_messages = []
 
     while True:
-        if total_count_limit - total_messages < limit:
-            limit = total_count_limit - total_messages
+        if total_count_limit - num_total_messages < limit:
+            limit = total_count_limit - num_total_messages
         history = await client(
             GetHistoryRequest(
                 peer=channel_entity,
@@ -52,7 +55,7 @@ async def get_channel_messages(
                 add_offset=0,
                 limit=limit,
                 max_id=0,
-                min_id=0,
+                min_id=newest_old_message,
                 hash=0,
             )
         )
@@ -68,8 +71,8 @@ async def get_channel_messages(
                     username=user.username)
                 if download_avatars and not list(media_path.glob(f"avatar_{user.id:0>10}.*")):
                     await client.download_profile_photo(user, file=media_path / f"avatar_{user.id:0>10}")
-        all_messages.extend(messages)
-        log.info(f"{len(messages)} new, {len(all_messages)} overall")
+        new_messages.extend(messages)
+        log.info(f"{len(messages)} new, {len(new_messages) + num_old_messages} overall")
         if media_path:
             for message in messages:
                 if message.media:
@@ -80,12 +83,12 @@ async def get_channel_messages(
                             message, file=media_path / f"{message.id:07}"
                         )
 
-        offset_id = messages[len(messages) - 1].id
-        total_messages = len(all_messages)
-        if total_count_limit != 0 and total_messages >= total_count_limit:
+        offset_id = messages[-1].id
+        num_total_messages = len(new_messages) + num_old_messages
+        if total_count_limit != 0 and num_total_messages >= total_count_limit:
             break
-        dump_messages(all_messages, out_file)
-    return all_messages
+    old_messages.extend(new_messages[::-1])
+    return old_messages
 
 
 async def main(args):
