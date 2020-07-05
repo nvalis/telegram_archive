@@ -24,7 +24,7 @@ def dump_messages(messages, file_path):
 
 
 async def get_channel_messages(
-    client, channel_entity, out_file, media_path=None, total_count_limit=0
+    client, channel_entity, out_file, media_path=None, total_count_limit=0, download_avatars=False
 ):
     # scrape last n messages from the given channel
     offset_id = 0
@@ -59,6 +59,15 @@ async def get_channel_messages(
         if not history.messages:
             break
         messages = history.messages
+        for message in messages:
+            message.channel_title = (await client.get_entity(message.to_id)).title
+            if message.from_id:
+                user = await client.get_entity(message.from_id)
+                message.from_user = dict(
+                    first_name=user.first_name, last_name=user.last_name, id_=user.id,
+                    username=user.username)
+                if download_avatars and not list(media_path.glob(f"avatar_{user.id:0>10}.*")):
+                    await client.download_profile_photo(user, file=media_path / f"avatar_{user.id:0>10}")
         all_messages.extend(messages)
         log.info(f"{len(messages)} new, {len(all_messages)} overall")
         if media_path:
@@ -92,9 +101,10 @@ async def main(args):
         out_file = subdir / f"{args.channel}.pkl"
     subdir.mkdir(exist_ok=True)
 
-    media_path = subdir if args.media else None
+    media_path = subdir if args.media or args.avatars else None
     messages = await get_channel_messages(
-        client, channel, out_file, media_path=media_path, total_count_limit=args.number
+        client, channel, out_file, media_path=media_path, total_count_limit=args.number,
+        download_avatars=args.avatars
     )
 
     dump_messages(messages, out_file)
@@ -146,6 +156,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-m", "--media", help="also archive attached media files", action="store_true"
+    )
+    parser.add_argument(
+        "-a", "--avatars", help="also archive profile avatars", action="store_true"
     )
     args = parser.parse_args()
 
